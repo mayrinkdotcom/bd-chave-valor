@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
 
 #define M 19
 
@@ -10,6 +12,8 @@ typedef struct
 }Person;
 
 Person hashTable[M];
+
+
 
 void initTable() {
    for (int i = 0; i < M; i++)
@@ -29,6 +33,8 @@ Person readPerson() {
    fgets(p.name, 50, stdin);
    return p;
 }
+
+
 
 void insert() {
    Person p = readPerson();
@@ -60,16 +66,30 @@ void print() {
    }
    printf("\n-------------------------------------------------------\n");  
 }
+void writeFile(FILE * arquivo,char operation[50]){
+   if ((arquivo = fopen("arquivo.txt","a")) == NULL)
+   {
+     printf("Erro de abertura! \n");
+   }else{
+      fprintf(arquivo, "%s\n", operation);
+      fclose(arquivo);
+   }
+}
+
+
 
 
 int main() {
+   FILE * arquivo;
+   //readFile();
    printf("\nHello, World!\n");
-
    int op, key;
    Person *p;
+   pthread_t writter;
 
    initTable();
 
+   pthread_create(&writter, NULL, writeFile  , NULL);
    do
    {
       printf("1 - Insert\n");
@@ -84,21 +104,27 @@ int main() {
       {
       case 1:
          insert();
+         writeFile(arquivo, "insert");
          break;
       
       case 2:
          printf("Insert the key you want to search in the table: ");
          scanf("%d", &key);
          p = search(key);
-         if (p)
+         if (p){
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
-         else
+            writeFile(arquivo, "search");
+            }
+         else{
             printf("\nKey didn't match any record.\n");
+            writeFile(arquivo, "search, no answer");
+            }
          break;
       
       case 3:
          print();
-         break;
+         writeFile(arquivo, "print");
+         break;         
       
       case 0:
          printf("Bye...\n");
