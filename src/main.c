@@ -81,7 +81,6 @@ void writeFile(FILE * arquivo,char operation[50]){
 
 int main() {
    FILE * arquivo;
-   //readFile();
    printf("\nHello, World!\n");
    int op, key;
    Person *p;
@@ -134,8 +133,9 @@ int main() {
          printf("Invalid option!\n");
          break;
       }
-
+    
    } while (op != 0);
 
+   pthread_exit(NULL);
    return 0;
 }
