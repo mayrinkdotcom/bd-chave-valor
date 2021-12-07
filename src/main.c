@@ -67,12 +67,25 @@ void print() {
    printf("\n-------------------------------------------------------\n");  
 }
 void writeFile(FILE * arquivo,char operation[50]){
-   if ((arquivo = fopen("arquivo.txt","a")) == NULL)
-   {
+   if ((arquivo = fopen("arquivo.txt","a")) == NULL){
      printf("Erro de abertura! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
+   }
+}
+void readFile(FILE * arquivo){
+   char operation[50];
+   if ((arquivo = fopen("arquivo.txt","r")) == NULL){
+       printf("Erro de abertura! \n");
+   }
+   else{ 
+      fgets(operation, 50, arquivo);
+      while (!feof(arquivo)){ 
+         printf("%s", operation);
+         fgets(operation, 50, arquivo);
+      }
+   fclose(arquivo);
    }
 }
 
@@ -94,6 +107,7 @@ int main() {
       printf("1 - Insert\n");
       printf("2 - Search\n");
       printf("3 - Print\n");
+      printf("4 - See operations\n");
       printf("0 - Exit\n");
       printf("-> ");
 
@@ -125,6 +139,9 @@ int main() {
          writeFile(arquivo, "print");
          break;         
       
+      case 4:
+         readFile(arquivo);
+         break;
       case 0:
          printf("Bye...\n");
          break;
