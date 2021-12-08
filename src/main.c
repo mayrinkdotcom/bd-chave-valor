@@ -66,14 +66,33 @@ void print() {
    }
    printf("\n-------------------------------------------------------\n");  
 }
-void writeFile(FILE * arquivo,char operation[50]){
-   if ((arquivo = fopen("arquivo.txt","a")) == NULL)
-   {
+
+void *writeFile(void * operation){
+   FILE * arquivo;
+   if ((arquivo = fopen("arquivo.txt","a")) == NULL){
      printf("Erro de abertura! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
    }
+   return NULL;
+}
+
+void *readFile(){
+   FILE * arquivo;
+   char operation[50];
+   if ((arquivo = fopen("arquivo.txt","r")) == NULL){
+       printf("Erro de abertura! \n");
+   }
+   else{ 
+      fgets(operation, 50, arquivo);
+      while (!feof(arquivo)){ 
+         printf("%s", operation);
+         fgets(operation, 50, arquivo);
+      }
+   fclose(arquivo);
+   }
+   return NULL;
 }
 
 
@@ -85,15 +104,16 @@ int main() {
    int op, key;
    Person *p;
    pthread_t writter;
+   pthread_t reader;
 
    initTable();
 
-   pthread_create(&writter, NULL, writeFile  , NULL);
    do
    {
       printf("1 - Insert\n");
       printf("2 - Search\n");
       printf("3 - Print\n");
+      printf("4 - See operations\n");
       printf("0 - Exit\n");
       printf("-> ");
 
@@ -103,7 +123,7 @@ int main() {
       {
       case 1:
          insert();
-         writeFile(arquivo, "insert");
+         pthread_create(&writter, NULL, writeFile, (void *)"Insert");
          break;
       
       case 2:
@@ -112,19 +132,25 @@ int main() {
          p = search(key);
          if (p){
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
-            writeFile(arquivo, "search");
+            pthread_create(&writter, NULL, writeFile, (void *)"Search");
+            pthread_join(writter, NULL);
             }
          else{
             printf("\nKey didn't match any record.\n");
-            writeFile(arquivo, "search, no answer");
+            writeFile("Search, no answer");
             }
          break;
       
       case 3:
          print();
-         writeFile(arquivo, "print");
+         pthread_create(&writter, NULL, writeFile, (void *)"Print");
+         pthread_join(writter, NULL);
          break;         
       
+      case 4:
+         pthread_create(&reader, NULL, readFile, NULL);
+         pthread_join(reader, NULL);
+         break;
       case 0:
          printf("Bye...\n");
          break;
