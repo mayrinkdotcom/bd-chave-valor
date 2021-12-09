@@ -22,6 +22,14 @@ void initTable() {
       hashTable[i].registration = -1;
 }
 
+void lockMutex(){
+  pthread_mutex_lock(&lock);
+}
+
+void unlockMutex(){
+  pthread_mutex_unlock(&lock);
+}
+
 int hashCode(int key) {
    return key % M;
 }
@@ -38,27 +46,41 @@ Person readPerson() {
 
 
 
-void insert() {
+void *insert() {
    Person p = readPerson();
+   lockMutex();
    int index = hashCode(p.registration);
    while (hashTable[index].registration != -1)
       index = hashCode(index + 1);
    hashTable[index] = p;
-}
-
-Person* search(int key) {
-   int index = hashCode(key);
-   while (hashTable[index].registration)
-   {
-      if (hashTable[index].registration == key)
-         return &hashTable[index];
-      else
-         index = hashCode(index + 1);
-   }
+   unlockMutex();
    return NULL;
 }
 
-void print() {
+Person *search(int key) {
+   int index = hashCode(key);
+
+   //lockMutex();
+   while (hashTable[index].registration)
+   {
+      if (hashTable[index].registration == key) {
+         //unlockMutex();
+         return &hashTable[index];
+      }
+      else{
+         index = hashCode(index + 1);
+         //unlockMutex();
+      }
+         
+   }
+   
+
+   return NULL;
+}
+
+void *print() {
+
+   lockMutex();
    printf("\n-------------------------TABLE-------------------------\n");
    for (int i = 0; i < M; i++) {
       if (hashTable[i].registration != -1)
@@ -66,26 +88,29 @@ void print() {
       else
          printf("%2d = \n", i);
    }
-   printf("\n-------------------------------------------------------\n");  
+   printf("\n-------------------------------------------------------\n");
+   unlockMutex();
+
+   return NULL;  
 }
 
 void *writeFile(void * operation){
    FILE * arquivo;
-   pthread_mutex_lock(&lock);
+   lockMutex();
    if ((arquivo = fopen("arquivo.txt","a")) == NULL){
      printf("Erro de abertura! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
    }
-   pthread_mutex_unlock(&lock);
+   unlockMutex();
    return NULL;
 }
 
 void *readFile(){
    FILE * arquivo;
    char operation[50];
-   pthread_mutex_lock(&lock);
+   lockMutex();
    if ((arquivo = fopen("arquivo.txt","r")) == NULL){
        printf("Erro de abertura! \n");
    }
@@ -97,7 +122,7 @@ void *readFile(){
       }
    fclose(arquivo);
    }
-   pthread_mutex_unlock(&lock);
+   unlockMutex();
    return NULL;
 }
 
@@ -110,7 +135,7 @@ int main() {
    int op, key;
    Person *p;
    pthread_t writter;
-   pthread_t reader;
+   pthread_t req;
 
    initTable();
 
@@ -128,14 +153,19 @@ int main() {
       switch (op)
       {
       case 1:
-         insert();
+         pthread_create(&req, NULL, insert, NULL);
          pthread_create(&writter, NULL, writeFile, (void *)"Insert");
+
+         pthread_join(req, NULL);
+         pthread_join(writter, NULL);
          break;
       
       case 2:
          printf("Insert the key you want to search in the table: ");
          scanf("%d", &key);
          p = search(key);
+         printf("%s",p->name);
+         //p = pthread_create(&req, NULL, search, (void *) key);
          if (p){
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
             pthread_create(&writter, NULL, writeFile, (void *)"Search");
@@ -143,7 +173,8 @@ int main() {
             }
          else{
             printf("\nKey didn't match any record.\n");
-            writeFile("Search, no answer");
+            pthread_create(&writter, NULL, writeFile, (void *)"Search, no answer");
+            pthread_join(writter, NULL);
             }
          break;
       
@@ -154,8 +185,8 @@ int main() {
          break;         
       
       case 4:
-         pthread_create(&reader, NULL, readFile, NULL);
-         pthread_join(reader, NULL);
+         pthread_create(&req, NULL, readFile, NULL);
+         pthread_join(req, NULL);
          break;
       case 0:
          printf("Bye...\n");
@@ -163,6 +194,7 @@ int main() {
       
       default:
          printf("Invalid option!\n");
+         pthread_create(&writter, NULL, writeFile, (void *) "Invalid option");
          break;
       }
     
