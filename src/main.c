@@ -5,6 +5,8 @@
 
 #define M 19
 
+pthread_mutex_t lock;
+
 typedef struct
 {
    int registration;
@@ -18,6 +20,14 @@ Person hashTable[M];
 void initTable() {
    for (int i = 0; i < M; i++)
       hashTable[i].registration = -1;
+}
+
+void lockMutex(){
+  pthread_mutex_lock(&lock);
+}
+
+void unlockMutex(){
+  pthread_mutex_unlock(&lock);
 }
 
 int hashCode(int key) {
@@ -36,27 +46,41 @@ Person readPerson() {
 
 
 
-void insert() {
+void *insert() {
    Person p = readPerson();
+   lockMutex();
    int index = hashCode(p.registration);
    while (hashTable[index].registration != -1)
       index = hashCode(index + 1);
    hashTable[index] = p;
-}
-
-Person* search(int key) {
-   int index = hashCode(key);
-   while (hashTable[index].registration)
-   {
-      if (hashTable[index].registration == key)
-         return &hashTable[index];
-      else
-         index = hashCode(index + 1);
-   }
+   unlockMutex();
    return NULL;
 }
 
-void print() {
+Person *search(int key) {
+   int index = hashCode(key);
+
+   //lockMutex();
+   while (hashTable[index].registration)
+   {
+      if (hashTable[index].registration == key) {
+         //unlockMutex();
+         return &hashTable[index];
+      }
+      else{
+         index = hashCode(index + 1);
+         //unlockMutex();
+      }
+         
+   }
+   
+
+   return NULL;
+}
+
+void *print() {
+
+   lockMutex();
    printf("\n-------------------------TABLE-------------------------\n");
    for (int i = 0; i < M; i++) {
       if (hashTable[i].registration != -1)
@@ -64,15 +88,63 @@ void print() {
       else
          printf("%2d = \n", i);
    }
-   printf("\n-------------------------------------------------------\n");  
+   printf("\n-------------------------------------------------------\n");
+   unlockMutex();
+
+   return NULL;  
 }
-void writeFile(FILE * arquivo,char operation[50]){
+
+
+void *updateName(void *key){
+  int index = hashCode((int)key);
+
+   lockMutex();
+   while (hashTable[index].registration)
+   {
+      if (hashTable[index].registration == (int)key) {
+         printf("Insert the name\n");
+         scanf("%s", hashTable[index].name);
+         printf("\n\tRegistration: %d \tName: %s\n", hashTable[index].registration, hashTable[index].name);
+         break;
+      }
+   }
+   unlockMutex();
+
+  return NULL;
+}
+
+
+void *writeFile(void * operation){
+   FILE * arquivo;
+   lockMutex();
    if ((arquivo = fopen("arquivo.txt","a")) == NULL){
      printf("Erro de abertura! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
    }
+   unlockMutex();
+   return NULL;
+}
+
+
+void *readFile(){
+   FILE * arquivo;
+   char operation[50];
+   lockMutex();
+   if ((arquivo = fopen("arquivo.txt","r")) == NULL){
+       printf("Erro de abertura! \n");
+   }
+   else{ 
+      fgets(operation, 50, arquivo);
+      while (!feof(arquivo)){ 
+         printf("%s", operation);
+         fgets(operation, 50, arquivo);
+      }
+   fclose(arquivo);
+   }
+   unlockMutex();
+   return NULL;
 }
 void readFile(FILE * arquivo){
    char operation[50];
@@ -89,6 +161,24 @@ void readFile(FILE * arquivo){
    }
 }
 
+void remove(int key){
+   int index = hashCode(key);
+
+   //lockMutex();
+   while (hashTable[index].registration)
+   {
+      if (hashTable[index].registration == key) {
+         //unlockMutex();
+         hashTable[index].name = null;
+      }
+      else{
+         index = hashCode(index + 1);
+         //unlockMutex();
+      }
+         
+   }
+}
+
 
 
 
@@ -98,16 +188,18 @@ int main() {
    int op, key;
    Person *p;
    pthread_t writter;
+   pthread_t req;
 
    initTable();
 
-   pthread_create(&writter, NULL, writeFile  , NULL);
    do
    {
       printf("1 - Insert\n");
       printf("2 - Search\n");
       printf("3 - Print\n");
-      printf("4 - See operations\n");
+      printf("4 - Update Name\n");
+      printf("5 - Remover\n");
+      printf("6 - See operations\n");
       printf("0 - Exit\n");
       printf("-> ");
 
@@ -116,38 +208,65 @@ int main() {
       switch (op)
       {
       case 1:
-         insert();
-         writeFile(arquivo, "insert");
+         pthread_create(&req, NULL, insert, NULL);
+         pthread_create(&writter, NULL, writeFile, (void *)"Insert");
+
+         pthread_join(req, NULL);
+         pthread_join(writter, NULL);
          break;
       
       case 2:
          printf("Insert the key you want to search in the table: ");
          scanf("%d", &key);
          p = search(key);
+         printf("%s",p->name);
+         //p = pthread_create(&req, NULL, search, (void *) key);
          if (p){
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
-            writeFile(arquivo, "search");
+            pthread_create(&writter, NULL, writeFile, (void *)"Search");
+            pthread_join(writter, NULL);
             }
          else{
             printf("\nKey didn't match any record.\n");
-            writeFile(arquivo, "search, no answer");
+            pthread_create(&writter, NULL, writeFile, (void *)"Search, no answer");
+            pthread_join(writter, NULL);
             }
          break;
       
       case 3:
          print();
-         writeFile(arquivo, "print");
+         pthread_create(&writter, NULL, writeFile, (void *)"Print");
+         pthread_join(writter, NULL);
          break;         
-      
+
       case 4:
-         readFile(arquivo);
+         printf("Insert the key you want to update\n");
+         scanf("%d", &key);
+         p = search(key);
+         if(p){
+           printf("%s\n", p->name);
+           pthread_create(&req, NULL, updateName, (void *)key);
+           pthread_join(req, NULL);
+         }
+      case 5:
+         printf("Insert the key you want to remove in the table: ");
+         remove("%d", &key);
+         remove(key);
+         pthread_create(&req, NULL, readFile, NULL);
+         pthread_join(req, NULL);
          break;
+      case 6:
+         pthread_create(&req, NULL, readFile, NULL);
+         pthread_join(req, NULL);
+         break;
+
       case 0:
          printf("Bye...\n");
          break;
       
       default:
          printf("Invalid option!\n");
+         pthread_create(&writter, NULL, writeFile, (void *) "Invalid option");
          break;
       }
     
