@@ -94,6 +94,26 @@ void *print() {
    return NULL;  
 }
 
+
+void *updateName(void *key){
+  int index = hashCode((int)key);
+
+   lockMutex();
+   while (hashTable[index].registration)
+   {
+      if (hashTable[index].registration == (int)key) {
+         printf("Insert the name\n");
+         scanf("%s", hashTable[index].name);
+         printf("\n\tRegistration: %d \tName: %s\n", hashTable[index].registration, hashTable[index].name);
+         break;
+      }
+   }
+   unlockMutex();
+
+  return NULL;
+}
+
+
 void *writeFile(void * operation){
    FILE * arquivo;
    lockMutex();
@@ -106,6 +126,7 @@ void *writeFile(void * operation){
    unlockMutex();
    return NULL;
 }
+
 
 void *readFile(){
    FILE * arquivo;
@@ -145,6 +166,7 @@ int main() {
       printf("2 - Search\n");
       printf("3 - Print\n");
       printf("4 - See operations\n");
+      printf("5 - Update Name\n");
       printf("0 - Exit\n");
       printf("-> ");
 
@@ -188,6 +210,18 @@ int main() {
          pthread_create(&req, NULL, readFile, NULL);
          pthread_join(req, NULL);
          break;
+
+      case 5:
+         printf("Insert the key you want to update\n");
+         scanf("%d", &key);
+         p = search(key);
+         if(p){
+           printf("%s\n", p->name);
+           pthread_create(&req, NULL, updateName, (void *)key);
+           pthread_join(req, NULL);
+         }
+         break;
+
       case 0:
          printf("Bye...\n");
          break;
