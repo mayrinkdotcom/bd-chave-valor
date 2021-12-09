@@ -5,6 +5,8 @@
 
 #define M 19
 
+pthread_mutex_t lock;
+
 typedef struct
 {
    int registration;
@@ -69,18 +71,21 @@ void print() {
 
 void *writeFile(void * operation){
    FILE * arquivo;
+   pthread_mutex_lock(&lock);
    if ((arquivo = fopen("arquivo.txt","a")) == NULL){
      printf("Erro de abertura! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
    }
+   pthread_mutex_unlock(&lock);
    return NULL;
 }
 
 void *readFile(){
    FILE * arquivo;
    char operation[50];
+   pthread_mutex_lock(&lock);
    if ((arquivo = fopen("arquivo.txt","r")) == NULL){
        printf("Erro de abertura! \n");
    }
@@ -92,6 +97,7 @@ void *readFile(){
       }
    fclose(arquivo);
    }
+   pthread_mutex_unlock(&lock);
    return NULL;
 }
 
