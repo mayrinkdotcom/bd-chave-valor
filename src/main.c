@@ -16,23 +16,26 @@ typedef struct
 Person hashTable[M];
 
 
-
 void initTable() {
    for (int i = 0; i < M; i++)
       hashTable[i].registration = -1;
 }
 
+
 void lockMutex(){
   pthread_mutex_lock(&lock);
 }
+
 
 void unlockMutex(){
   pthread_mutex_unlock(&lock);
 }
 
+
 int hashCode(int key) {
    return key % M;
 }
+
 
 Person readPerson() {
    Person p;
@@ -45,24 +48,29 @@ Person readPerson() {
 }
 
 
-
 void *insert() {
    Person p = readPerson();
+
    lockMutex();
    int index = hashCode(p.registration);
    while (hashTable[index].registration != -1)
       index = hashCode(index + 1);
    hashTable[index] = p;
    unlockMutex();
+
    return NULL;
 }
 
+
 Person *search(int key) {
    int index = hashCode(key);
+   int cont = 0;
 
    //lockMutex();
    while (hashTable[index].registration)
    {
+     cont++;
+     printf("%d", cont);
       if (hashTable[index].registration == key) {
          //unlockMutex();
          return &hashTable[index];
@@ -77,6 +85,7 @@ Person *search(int key) {
 
    return NULL;
 }
+
 
 void *print() {
 
@@ -98,19 +107,35 @@ void *print() {
 void *updateName(void *key){
   int index = hashCode((int)key);
 
-   lockMutex();
-   while (hashTable[index].registration)
-   {
-      if (hashTable[index].registration == (int)key) {
-         printf("Insert the name\n");
-         scanf("%s", hashTable[index].name);
-         printf("\n\tRegistration: %d \tName: %s\n", hashTable[index].registration, hashTable[index].name);
-         break;
-      }
-   }
-   unlockMutex();
+   
+    if (hashTable[index].registration == (int)key) {
+      lockMutex();
+      printf("Insert the name\n");
+      scanf("%s", hashTable[index].name);
+      printf("\n\tRegistration: %d \tName: %s\n", hashTable[index].registration, hashTable[index].name);  
+      unlockMutex();  
+    } else {
+      printf("ERROR in updateName");
+    }
+   
 
   return NULL;
+}
+
+
+void *removeKey(void *key){
+   int index = hashCode((int)key);
+
+    if (hashTable[index].registration) {
+         lockMutex();
+         strcpy(hashTable[index].name, "");
+         hashTable[index].registration = -1;
+         unlockMutex();
+    }
+    else
+         index = hashCode(index + 1);
+    
+   return NULL;
 }
 
 
@@ -146,39 +171,6 @@ void *readFile(){
    unlockMutex();
    return NULL;
 }
-void readFile(FILE * arquivo){
-   char operation[50];
-   if ((arquivo = fopen("arquivo.txt","r")) == NULL){
-       printf("Erro de abertura! \n");
-   }
-   else{ 
-      fgets(operation, 50, arquivo);
-      while (!feof(arquivo)){ 
-         printf("%s", operation);
-         fgets(operation, 50, arquivo);
-      }
-   fclose(arquivo);
-   }
-}
-
-void remove(int key){
-   int index = hashCode(key);
-
-   //lockMutex();
-   while (hashTable[index].registration)
-   {
-      if (hashTable[index].registration == key) {
-         //unlockMutex();
-         hashTable[index].name = null;
-      }
-      else{
-         index = hashCode(index + 1);
-         //unlockMutex();
-      }
-         
-   }
-}
-
 
 
 
@@ -198,7 +190,7 @@ int main() {
       printf("2 - Search\n");
       printf("3 - Print\n");
       printf("4 - Update Name\n");
-      printf("5 - Remover\n");
+      printf("5 - Remove\n");
       printf("6 - See operations\n");
       printf("0 - Exit\n");
       printf("-> ");
@@ -248,13 +240,15 @@ int main() {
            pthread_create(&req, NULL, updateName, (void *)key);
            pthread_join(req, NULL);
          }
+      break;
+
       case 5:
          printf("Insert the key you want to remove in the table: ");
-         remove("%d", &key);
-         remove(key);
-         pthread_create(&req, NULL, readFile, NULL);
+         scanf("%d", &key);
+         pthread_create(&req, NULL, removeKey, (void *) key);
          pthread_join(req, NULL);
          break;
+
       case 6:
          pthread_create(&req, NULL, readFile, NULL);
          pthread_join(req, NULL);
