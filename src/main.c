@@ -3,6 +3,13 @@
 #include <string.h>
 #include <pthread.h>
 
+// Bibilioteca para utilização de FIFO
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <fcntl.h>
+
 #define M 19
 
 pthread_mutex_t lock;
@@ -143,7 +150,7 @@ void *writeFile(void * operation){
    FILE * arquivo;
    lockMutex();
    if ((arquivo = fopen("arquivo.txt","a")) == NULL){
-     printf("Erro de abertura! \n");
+     printf("An error occurred opening the file! \n");
    }else{
       fprintf(arquivo, "%s\n", operation);
       fclose(arquivo);
@@ -158,7 +165,7 @@ void *readFile(){
    char operation[50];
    lockMutex();
    if ((arquivo = fopen("arquivo.txt","r")) == NULL){
-       printf("Erro de abertura! \n");
+       printf("An error occurred opening the file! \n");
    }
    else{ 
       fgets(operation, 50, arquivo);
@@ -172,11 +179,29 @@ void *readFile(){
    return NULL;
 }
 
+int namedPipes() {
+   if(mkfifo("arquivo", 0777)) {
+      if(errno !- EEXIST) {
+         printf("An error occurred creating the file! \n");
+         return 1;
+      }
+   }
+
+   int fd = open("fifoFile", O_WRONLY);
+   if(fd == -1) {
+      printf("An error occurred opening the file! \n");
+      return 1;
+   }
+
+   close(fd);
+
+   return 0;
+}
 
 
 int main() {
    FILE * arquivo;
-   printf("\nHello, World!\n");
+   
    int op, key;
    Person *p;
    pthread_t writter;
