@@ -237,7 +237,7 @@ int main() {
          p = search(key);
          if(p){
            printf("%s\n", p->name);
-           pthread_create(&req, NULL, updateName, (void *)key);
+           pthread_create(&req, NULL, updateName, (void *) &key);
            pthread_join(req, NULL);
          }
       break;
@@ -245,7 +245,7 @@ int main() {
       case 5:
          printf("Insert the key you want to remove in the table: ");
          scanf("%d", &key);
-         pthread_create(&req, NULL, removeKey, (void *) key);
+         pthread_create(&req, NULL, removeKey, (void *) &key);
          pthread_join(req, NULL);
          break;
 
