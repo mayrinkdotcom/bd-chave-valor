@@ -77,7 +77,7 @@ Person *search(int key) {
    while (hashTable[index].registration)
    {
      cont++;
-     printf("%d", cont);
+     printf("%d: ", cont);
       if (hashTable[index].registration == key) {
          //unlockMutex();
          return &hashTable[index];
@@ -189,8 +189,8 @@ int main() {
 
    pid_t pid;
 
-   if(mkfifo("arquivo", 0777)) {
-      if(errno !- EEXIST) {
+   if(mkfifo("fifoFile", 0777)) {
+      if(errno != EEXIST) {
          printf("An error occurred creating the file! \n");
          return 500;
       }
@@ -206,12 +206,6 @@ int main() {
 
    do
    {
-      //Inicialização de instâncias filhas do processo principal
-      if((pid = fork()) < 0) {
-         perror("An error ocurred during the creation of child process! \n");
-         return 500;
-      }
-      
       printf("1 - Insert\n");
       printf("2 - Search\n");
       printf("3 - Print\n");
@@ -222,7 +216,7 @@ int main() {
       printf("-> ");
 
       scanf("%d", &op);
-      write(fd, op, sizeof(op));
+      write(fd, &op, sizeof(op));
       
       switch (op)
       {
@@ -265,7 +259,14 @@ int main() {
          if(p){
            printf("%s\n", p->name);
            pthread_create(&req, NULL, updateName, (void *) &key);
+           pthread_create(&writter, NULL, writeFile, (void *)"Update");
+
            pthread_join(req, NULL);
+           pthread_join(writter, NULL);
+         }else{
+            printf("\nKey didn't match any record.\n");
+            pthread_create(&writter, NULL, writeFile, (void *)"Update, no answer");
+            pthread_join(writter, NULL);
          }
          break;
 
@@ -273,7 +274,10 @@ int main() {
          printf("Insert the key you want to remove in the table: ");
          scanf("%d", &key);
          pthread_create(&req, NULL, removeKey, (void *) &key);
+         pthread_create(&writter, NULL, writeFile, (void *)"Remove");
+
          pthread_join(req, NULL);
+         pthread_join(writter, NULL);
          break;
 
       case 6:
