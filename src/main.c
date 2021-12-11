@@ -173,31 +173,11 @@ void *readFile(){
          printf("%s", operation);
          fgets(operation, 50, arquivo);
       }
-   fclose(arquivo);
+      fclose(arquivo);
    }
    unlockMutex();
    return NULL;
 }
-
-int namedPipes() {
-   if(mkfifo("arquivo", 0777)) {
-      if(errno !- EEXIST) {
-         printf("An error occurred creating the file! \n");
-         return 1;
-      }
-   }
-
-   int fd = open("fifoFile", O_WRONLY);
-   if(fd == -1) {
-      printf("An error occurred opening the file! \n");
-      return 1;
-   }
-
-   close(fd);
-
-   return 0;
-}
-
 
 int main() {
    FILE * arquivo;
@@ -207,10 +187,31 @@ int main() {
    pthread_t writter;
    pthread_t req;
 
+   pid_t pid;
+
+   if(mkfifo("arquivo", 0777)) {
+      if(errno !- EEXIST) {
+         printf("An error occurred creating the file! \n");
+         return 500;
+      }
+   }
+
+   int fd = open("fifoFile", O_RDWR);
+   if(fd == -1) {
+      printf("An error occurred opening the file! \n");
+      return 500;
+   }
+   
    initTable();
 
    do
    {
+      //Inicialização de instâncias filhas do processo principal
+      if((pid = fork()) < 0) {
+         perror("An error ocurred during the creation of child process! \n");
+         return 500;
+      }
+      
       printf("1 - Insert\n");
       printf("2 - Search\n");
       printf("3 - Print\n");
@@ -221,7 +222,8 @@ int main() {
       printf("-> ");
 
       scanf("%d", &op);
-
+      write(fd, op, sizeof(op));
+      
       switch (op)
       {
       case 1:
@@ -242,12 +244,12 @@ int main() {
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
             pthread_create(&writter, NULL, writeFile, (void *)"Search");
             pthread_join(writter, NULL);
-            }
+         }
          else{
             printf("\nKey didn't match any record.\n");
             pthread_create(&writter, NULL, writeFile, (void *)"Search, no answer");
             pthread_join(writter, NULL);
-            }
+         }
          break;
       
       case 3:
@@ -265,7 +267,7 @@ int main() {
            pthread_create(&req, NULL, updateName, (void *) &key);
            pthread_join(req, NULL);
          }
-      break;
+         break;
 
       case 5:
          printf("Insert the key you want to remove in the table: ");
@@ -290,7 +292,8 @@ int main() {
       }
     
    } while (op != 0);
-
+   
+   close(fd);
    pthread_exit(NULL);
    return 0;
 }
