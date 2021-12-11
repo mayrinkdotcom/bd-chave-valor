@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <conio.h>
 #include <pthread.h>
 
 // Bibilioteca para utilização de FIFO
@@ -46,9 +47,17 @@ int hashCode(int key) {
 
 Person readPerson() {
    Person p;
-   printf("Insert the registration: ");
-   scanf("%d", &p.registration);
-   scanf("%*c");
+
+   do { // Impede que o usuário digite um número negativo
+      printf("Insert the registration: ");
+      scanf("%d", &p.registration);
+      scanf("%*c");
+
+      if(p.registration < 0) {
+         printf("Invalid number! Insert a integer positive number!\n");
+      }
+   } while(p.registration < 0);
+
    printf("Insert the name: ");
    fgets(p.name, 50, stdin);
    return p;
@@ -179,6 +188,21 @@ void *readFile(){
    return NULL;
 }
 
+// Impede que o usuário digite um número negativo
+int verifyEntry(char *action) {
+   int key;
+   do {
+      printf("Insert the key you want to %s in the table: ", action);
+      scanf("%d", &key);
+
+      if(key < 0) {
+         printf("Invalid number! Insert a integer positive number!\n");
+      }
+   } while(key < 0);
+
+   return key;
+}
+
 int main() {
    FILE * arquivo;
    
@@ -212,6 +236,7 @@ int main() {
       printf("4 - Update Name\n");
       printf("5 - Remove\n");
       printf("6 - See operations\n");
+      printf("7 - Clear prompt\n");
       printf("0 - Exit\n");
       printf("-> ");
 
@@ -229,8 +254,8 @@ int main() {
          break;
       
       case 2:
-         printf("Insert the key you want to search in the table: ");
-         scanf("%d", &key);
+         key = verifyEntry("search");
+
          p = search(key);
          printf("%s",p->name);
          //p = pthread_create(&req, NULL, search, (void *) key);
@@ -253,8 +278,8 @@ int main() {
          break;         
 
       case 4:
-         printf("Insert the key you want to update\n");
-         scanf("%d", &key);
+         key = verifyEntry("update");
+
          p = search(key);
          if(p){
            printf("%s\n", p->name);
@@ -271,9 +296,10 @@ int main() {
          break;
 
       case 5:
-         printf("Insert the key you want to remove in the table: ");
-         scanf("%d", &key);
-         pthread_create(&req, NULL, removeKey, (void *) &key);
+         key = verifyEntry("remove");
+
+         p = search(key);
+         pthread_create(&req, NULL, removeKey, (void *) &p);
          pthread_create(&writter, NULL, writeFile, (void *)"Remove");
 
          pthread_join(req, NULL);
@@ -284,6 +310,16 @@ int main() {
          pthread_create(&req, NULL, readFile, NULL);
          pthread_join(req, NULL);
          break;
+
+      case 7:
+         char clean;
+         printf("Are you sure you want to clear the prompt? (y/n)");
+         scanf("%c", clean)
+         if(clean == "y" || clean == 'Y') {
+            system("cls");
+         } else {
+            printf("Opperation cancelled!");
+         }
 
       case 0:
          printf("Bye...\n");
