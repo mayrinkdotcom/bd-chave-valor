@@ -203,6 +203,21 @@ int verifyEntry(char *action) {
    return key;
 }
 
+void *cleanPrompt() {
+   char answer;
+   
+   printf("Are you sure you want to clear the prompt? (y/n)\n");
+   scanf(" %c", &answer);
+
+   if(answer == 'y' || answer == 'Y') {
+      system("cls");
+   } else {
+      printf("Opperation cancelled!\n");
+   }
+
+   return NULL;
+}
+
 int main() {
    FILE * arquivo;
    
@@ -312,14 +327,10 @@ int main() {
          break;
 
       case 7:
-         char clean;
-         printf("Are you sure you want to clear the prompt? (y/n)");
-         scanf("%c", clean)
-         if(clean == "y" || clean == 'Y') {
-            system("cls");
-         } else {
-            printf("Opperation cancelled!");
-         }
+         pthread_create(&req, NULL, cleanPrompt, NULL);
+
+         pthread_join(req, NULL);
+         break;
 
       case 0:
          printf("Bye...\n");
