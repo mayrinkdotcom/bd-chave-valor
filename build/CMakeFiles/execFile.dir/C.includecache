@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/jjesus/dev/bd-chave-valor/src/main.c
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+pthread.h
+-
+
