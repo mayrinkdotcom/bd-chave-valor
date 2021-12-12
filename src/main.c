@@ -79,27 +79,16 @@ void *insert() {
 
 
 Person *search(int key) {
-   int index = hashCode(key);
-   int cont = 0;
-
-   //lockMutex();
-   while (hashTable[index].registration)
-   {
-     cont++;
-     printf("%d: ", cont);
-      if (hashTable[index].registration == key) {
-         //unlockMutex();
-         return &hashTable[index];
-      }
-      else{
-         index = hashCode(index + 1);
-         //unlockMutex();
-      }
-         
+   for (int i = 0; i < M; i++) {
+      if (hashTable[i].registration == key)
+         return &hashTable[i];
    }
-   
 
-   return NULL;
+   static Person searchFailed;
+   strcpy(searchFailed.name, "Not Found");
+   searchFailed.registration = -1;
+
+   return &searchFailed;
 }
 
 
@@ -272,9 +261,9 @@ int main() {
          key = verifyEntry("search");
 
          p = search(key);
-         printf("%s",p->name);
+         // printf("%s",p->name);
          //p = pthread_create(&req, NULL, search, (void *) key);
-         if (p){
+         if (p && p->registration != -1){
             printf("\n\tRegistration: %d \tName: %s\n", p->registration, p->name);
             pthread_create(&writter, NULL, writeFile, (void *)"Search");
             pthread_join(writter, NULL);
