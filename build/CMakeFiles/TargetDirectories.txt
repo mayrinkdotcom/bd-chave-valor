@@ -1,0 +1,3 @@
+/home/jjesus/dev/bd-chave-valor/build/CMakeFiles/rebuild_cache.dir
+/home/jjesus/dev/bd-chave-valor/build/CMakeFiles/edit_cache.dir
+/home/jjesus/dev/bd-chave-valor/build/CMakeFiles/execFile.dir
